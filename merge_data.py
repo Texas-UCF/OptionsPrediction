@@ -6,6 +6,7 @@ from yahoo_finance import Share
 def label_df(joint_df):
     joint_df['payoff'] = joint_df['PX_EXP'] - joint_df['PX_LAST']
     joint_df['moneyness'] = joint_df['payoff'] > 0
+    joint_df['profitability'] = joint_df['payoff'] > joint_df['call_close']
     return joint_df
 
 
