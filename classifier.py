@@ -73,8 +73,12 @@ def split_data_tt(features, labels):
 
 def feature_extraction(df):
     labels = df['moneyness']
-    feature_df = df.drop(['date', 'expdt', 'call', 'put', 'underlying', 'PX_EXP', 'moneyness', 'profitability', 'payoff'], 1)
+    categorical_columns = ['underlying', 'INDUSTRY_SECTOR', 'INDUSTRY_GROUP', 'INDUSTRY_SUBGROUP']
+    exclude = ['date', 'expdt', 'call', 'put', 'PX_EXP', 'moneyness', 'profitability', 'payoff', 'Price'] + categorical_columns
+    feature_df = df.drop(exclude, 1)
     feature_df = feature_df.drop(['Unnamed: 0'], axis=1) if 'Unnamed: 0' in feature_df.columns else feature_df
+    ohe = pd.get_dummies(df[categorical_columns], columns=categorical_columns)
+    feature_df = pd.concat([feature_df, ohe], axis=1)
     return feature_df, labels
 
 def get_data(path='./options_data.csv'):

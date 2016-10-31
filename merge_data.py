@@ -68,6 +68,7 @@ def join_fundamental(full_df):
 
         full_df[col_name] = full_df.merge(fundamental_df, left_on=['date', 'underlying'], right_on=['date', 'ticker'])[col_name]
     full_df = drop_na(full_df)
+    full_df['tte'] = (full_df['expdt'] - full_df['date']).apply(lambda x: x.days)
     return full_df
 
 
