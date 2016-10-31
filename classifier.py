@@ -1,5 +1,8 @@
 from __future__ import division
+from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB, BernoulliNB
+from sklearn.svm import SVC
 from sklearn.cross_validation import KFold
 # from sklearn.model_selection import KFold, train_test_split
 from sklearn.metrics import confusion_matrix, precision_score, recall_score
@@ -10,7 +13,9 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import average_precision_score
 
-def cross_validate(X, y):
+def cross_validate(X, y, pca_reduce=True):
+    if pca_reduce == True:
+        X = pd.DataFrame(dimensionality_reduction(X, y))
     kf = KFold(len(X), n_folds=10, shuffle=True)
     accuracies = []
     conf = []
@@ -68,6 +73,12 @@ def cross_validate(X, y):
     plt.show()
 
 
+def dimensionality_reduction(X, y, components=5):
+    pca = PCA(n_components=components)
+    X = pca.fit_transform(X,y)
+    print pca.explained_variance_ratio_
+    return X
+
 def split_data_tt(features, labels):
     X_train, X_test, y_train, y_test = train_test_split(features, labels)
 
@@ -88,4 +99,4 @@ def get_data(path='./options_data.csv'):
 if __name__ == '__main__':
     df = get_data('./options_fundamental_data.csv')
     X, y = feature_extraction(df)
-    cross_validate(X, y)
+    cross_validate(X, y, False)
