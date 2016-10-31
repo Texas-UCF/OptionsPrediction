@@ -5,8 +5,6 @@ import numpy as np
 import xlrd
 import csv
 import os
-import math
-from scipy.interpolate import interp1d
 
 def label_df(joint_df):
     joint_df['payoff'] = joint_df['PX_EXP'] - joint_df['strike']
@@ -48,13 +46,18 @@ def fundamental_xls_to_csv():
         for rownum in xrange(sheet.nrows):
             wr.writerow([unicode(val).encode('utf8') for val in sheet.row_values(rownum)])
 
+
 def join_fundamental(full_df):
     for filename in os.listdir('./fundamental'):
         col_name = filename[:-4]
         print col_name
         df = pd.read_csv('./fundamental/' + filename, index_col=0)
         if filename in ['Industry.csv']:
+            fundamental_df = industry_to_dataframe(df)
+            cols = fundamental_df.columns[:-1]
+            full_df[cols] = full_df.merge(fundamental_df, left_on=['underlying'], right_on=['ticker'])[cols]
             continue
+
         if df.index.name == 'Date':
             df = drop_na(df, 'Date')
             df.index = df.index.map(lambda x: xldate_to_datetime(x))
@@ -64,10 +67,9 @@ def join_fundamental(full_df):
         fundamental_df = fundamental_to_dataframe(df, col_name)
 
         full_df[col_name] = full_df.merge(fundamental_df, left_on=['date', 'underlying'], right_on=['date', 'ticker'])[col_name]
-    print full_df.shape
     full_df = drop_na(full_df)
-    print full_df.shape
     return full_df
+
 
 def xldate_to_datetime(xldate):
     year, month, day, _, _, _ = xlrd.xldate_as_tuple(xldate, 0)
@@ -92,12 +94,21 @@ def interpolate_df(df):
         new_df[col] = new_df[col].interpolate()
     return new_df
 
-def fundamental_to_dataframe(matrix_df, label):
+
+def fundamental_to_dataframe(matrix_df, label, col1='date', col2='ticker'):
     tuple_list = []
     for row_index, row in matrix_df.iterrows():
         for col_name in matrix_df.columns:
             tuple_list += [(row_index, col_name, row[col_name])]
-    return pd.DataFrame.from_records(tuple_list, columns=['date', 'ticker', label])
+    return pd.DataFrame.from_records(tuple_list, columns=[col1, col2, label])
+
+
+def industry_to_dataframe(matrix_df):
+    df = matrix_df.T
+    df['ticker'] = matrix_df.columns
+    df['ticker'] = df['ticker'].apply(lambda x: x.split()[0])
+    return df
+
 
 def merge_data():
     options_df = options_scrape()
@@ -108,6 +119,7 @@ def merge_data():
     labeled_df = drop_na(labeled_df)
     labeled_df.to_csv('./options_data.csv', index_label=False)
     return labeled_df
+
 
 def load_labeled_data(path='./options_data.csv'):
     df = pd.read_csv(path)
